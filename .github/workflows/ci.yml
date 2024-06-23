@@ -29,6 +29,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Run linter
       run: npm run lint
 
@@ -39,6 +47,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Cache node modules
+      uses: actions/cache@v2
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Install OpenSCAD
       run: apt-get update && apt-get install -y openscad
