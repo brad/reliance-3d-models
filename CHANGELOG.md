@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Nothing yet
 
-## [v1.0.0] - 2024-06-22
+## [1.0.0] - 2024-06-22
 ### Added
 - Initial release of the project.
 - Air hole plug model for Reliance water jugs.
