@@ -3,7 +3,7 @@
   "scripts": {
     "test": "jest",
     "lint": "tsc",
-    "build": "scripts/build.sh"
+    "build": "sh scripts/build.sh"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.6",
