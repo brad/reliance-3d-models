@@ -42,21 +42,25 @@ jobs:
         id: release_notes
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=$(echo $TAG_NAME | sed 's/^v//')
+          echo "VERSION<<EOF" >> $GITHUB_ENV
+          echo "$VERSION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           RELEASE_NOTES=$(
-            awk -v ver="$(echo $TAG_NAME | sed 's/^v//')" '
+            awk -v ver="$VERSION" '
               /^(##|###) \[?[0-9]+.[0-9]+.[0-9]+/ {
-                  if (p) { exit };
-                  if (index($2, "[")) {
-                      split($2, a, "[");
-                      split(a[2], a, "]");
-                      if (a[1] == ver) {
-                          p = 1
-                      }
-                  } else {
-                      if ($2 == ver) {
-                          p = 1
-                      }
+                if (p) { exit };
+                if (index($2, "[")) {
+                  split($2, a, "[");
+                  split(a[2], a, "]");
+                  if (a[1] == ver) {
+                    p = 1; next
                   }
+                } else {
+                  if ($2 == ver) {
+                    p = 1; next
+                  }
+                }
               } p
             ' CHANGELOG.md
           )
@@ -64,10 +68,6 @@ jobs:
             echo "Release notes for $TAG_NAME could not be found."
             exit 1
           fi
-          RELEASE_NOTES=$(
-            echo "$RELEASE_NOTES" | \
-              sed -e 's/%/%25/g' -e ':a' -e 'N' -e '$!ba' -e 's/\n/%0A/g' -e 's/\r/%0D/g'
-          )
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_NOTES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -78,9 +78,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_NOTES: ${{ env.RELEASE_NOTES }}
+          VERSION: ${{ env.VERSION }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: Release ${{ env.VERSION }}
           body: ${{ env.RELEASE_NOTES }}
           draft: false
           prerelease: false
