@@ -73,26 +73,33 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_NOTES: ${{ env.RELEASE_NOTES }}
-          VERSION: ${{ env.VERSION }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ env.VERSION }}
-          body: ${{ env.RELEASE_NOTES }}
-          draft: false
-          prerelease: false
+        run: |
+          RESPONSE=$(curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d '{
+              "tag_name": "${{ github.ref }}",
+              "name": "Release ${{ github.ref }}",
+              "body": "${{ env.RELEASE_NOTES }}",
+              "draft": false,
+              "prerelease": false
+            }')
+          echo "RELEASE_URL<<EOF" >> $GITHUB_ENV
+          echo $RESPONSE | jq .html_url >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_URL: ${{ env.RELEASE_URL }}
           VERSION: ${{ env.VERSION }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ env.RELEASE_URL }}
           asset_path: ./dist/reliance.zip
           asset_name: reliance-${{ env.VERSION }}.zip
           asset_content_type: application/zip
