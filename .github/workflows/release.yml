@@ -92,7 +92,7 @@ jobs:
                   '{tag_name: $tag_name, name: $name, body: $body, draft: false, prerelease: false}'
               )"
           )
-          UPLOAD_URL=$(echo "$RESPONSE" | grep \"upload_url\" | sed '/\",//' | sed 's/\"upload_url\": \"//')
+          UPLOAD_URL=$(echo "$RESPONSE" | grep \"upload_url\" | sed 's/\",//' | sed 's/\"upload_url\": \"//')
           echo "UPLOAD_URL<<EOF" >> $GITHUB_ENV
           echo "$UPLOAD_URL" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
