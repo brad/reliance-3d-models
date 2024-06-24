@@ -36,6 +36,7 @@ jobs:
           npm run test
 
       - name: Build
+        id: build
         run: npm run build
 
       - name: Extract Release Notes
@@ -104,6 +105,6 @@ jobs:
           VERSION: ${{ env.VERSION }}
         with:
           upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: ./dist/reliance.zip
+          asset_path: ./dist/reliance-${{ env.VERSION }}.zip
           asset_name: reliance-${{ env.VERSION }}.zip
           asset_content_type: application/zip
