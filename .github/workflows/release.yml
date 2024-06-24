@@ -92,7 +92,7 @@ jobs:
               )"
           )
           echo "$RESPONSE"
-          UPLOAD_URL=$(echo "$RESPONSE" | jq -r .upload_url | sed 's/{?name,label}//')
+          UPLOAD_URL=$(echo "$RESPONSE" | jq .upload_url | sed 's/{?name,label}//')
           echo "UPLOAD_URL<<EOF" >> $GITHUB_ENV
           echo "$UPLOAD_URL" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
