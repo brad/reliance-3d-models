@@ -65,16 +65,19 @@ jobs:
             echo "$RELEASE_NOTES" | \
               sed -e 's/%/%25/g' -e ':a' -e 'N' -e '$!ba' -e 's/\n/%0A/g' -e 's/\r/%0D/g'
           )
-          echo "::set-output name=notes::$RELEASE_NOTES"
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NOTES: ${{ env.RELEASE_NOTES }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          body: ${{ steps.release_notes.outputs.notes }}
+          body: ${{ env.RELEASE_NOTES }}
           draft: false
           prerelease: false
