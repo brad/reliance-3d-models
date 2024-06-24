@@ -7,8 +7,11 @@ on:
       - 'v*'
 
 jobs:
-  build:
+  create_release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     container: node:latest
     steps:
       - uses: actions/checkout@v2
