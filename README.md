@@ -22,4 +22,4 @@ We welcome contributions! If you have designed a part that could be useful to ot
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.

@@ -1,0 +1,110 @@
+# Whenever a new version tag is pushed to main, this workflow runs `npm run build`
+# and publishes dist/release-<version>.zip to the github releases page
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    container: node:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+      - name: Install openscad/jq/zip
+        run: |
+          apt-get update
+          apt-get install -y openscad jq zip
+
+      - name: Lint and test
+        run: |
+          npm run lint
+          npm run test
+
+      - name: Build
+        id: build
+        run: npm run build
+
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=$(echo $TAG_NAME | sed 's/^v//')
+          echo "VERSION<<EOF" >> $GITHUB_ENV
+          echo "$VERSION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          RELEASE_NOTES=$(
+            awk -v ver="$VERSION" '
+              /^(##|###) \[?[0-9]+.[0-9]+.[0-9]+/ {
+                if (p) { exit };
+                if (index($2, "[")) {
+                  split($2, a, "[");
+                  split(a[2], a, "]");
+                  if (a[1] == ver) {
+                    p = 1; next
+                  }
+                } else {
+                  if ($2 == ver) {
+                    p = 1; next
+                  }
+                }
+              } p
+            ' CHANGELOG.md
+          )
+          if [ -z "$RELEASE_NOTES" ]; then
+            echo "Release notes for $TAG_NAME could not be found."
+            exit 1
+          fi
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NOTES: ${{ env.RELEASE_NOTES }}
+          VERSION: ${{ env.VERSION }}
+        run: |
+          RESPONSE=$(
+            curl -X POST \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              https://api.github.com/repos/${{ github.repository }}/releases \
+              -d "$(
+                jq -n \
+                  --arg tag_name "${{ github.ref }}" \
+                  --arg name "Release ${{ env.VERSION }}" \
+                  --arg body "${{ env.RELEASE_NOTES }}" \
+                  '{tag_name: $tag_name, name: $name, body: $body, draft: false, prerelease: false}'
+              )"
+          )
+          UPLOAD_URL=$(echo "$RESPONSE" | grep \"upload_url\" | sed 's/\",//' | sed 's/\"upload_url\": \"//')
+          echo "UPLOAD_URL<<EOF" >> $GITHUB_ENV
+          echo "$UPLOAD_URL" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPLOAD_URL: ${{ env.UPLOAD_URL }}
+          VERSION: ${{ env.VERSION }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: ./dist/reliance-${{ env.VERSION }}.zip
+          asset_name: reliance-${{ env.VERSION }}.zip
+          asset_content_type: application/zip
